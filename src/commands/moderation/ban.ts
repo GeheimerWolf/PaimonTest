@@ -1,89 +1,92 @@
-import { botID, higherRolePosition, highestRole, Member, sendDirectMessage } from "../../../deps.ts";
-import { Embed } from "./../../utils/Embed.ts";
-import { createCommand, sendEmbed } from "./../../utils/helpers.ts";
+import {
+  ban,
+  botID,
+  higherRolePosition,
+  highestRole,
+  sendDirectMessage,
+} from "../../../deps.ts";
+import { botCache } from "../../../deps.ts";
+import { PermissionLevels } from "../../types/commands.ts";
+import { createCommand } from "../../utils/helpers.ts";
+import { translate } from "../../utils/i18next.ts";
 
 createCommand({
   name: `ban`,
-  guildOnly: true,
-  arguments: [
-    {
-      name: "member",
-      type: "member",
-      missing: (message) => {
-        return message.reply("User not found!");
-      },
-    },
-    {
-      name: "days",
-      type: "number",
-      defaultValue: 0,
-    },
-    {
-      name: "reason",
-      type: "...string",
-      defaultValue: "No reason given",
-    },
-  ],
-  userServerPermissions: ["BAN_MEMBERS"],
+  aliases: ["b"],
+  permissionLevels: [PermissionLevels.MODERATOR, PermissionLevels.ADMIN],
   botServerPermissions: ["BAN_MEMBERS"],
-  botChannelPermissions: ["VIEW_CHANNEL", "SEND_MESSAGES", "EMBED_LINKS"],
-  execute: async (message, args: BanArgs) => {
-    try {
-      const { guildID, channelID } = message;
-      const authorID = message.author.id;
-      const memberID = args.member.id;
+  arguments: [
+    { name: "member", type: "member", required: false },
+    { name: "userID", type: "snowflake", required: false },
+    { name: "reason", type: "...string", required: false },
+  ] as const,
+  guildOnly: true,
+  execute: async function (message, args, guild) {
+    if (!guild) return;
 
-      const { reason, days } = args;
+    if (args.member) {
+      const botsHighestRole = await highestRole(message.guildID, botID);
+      const membersHighestRole = await highestRole(
+        message.guildID,
+        args.member.id,
+      );
+      const modsHighestRole = await highestRole(
+        message.guildID,
+        message.author.id,
+      );
 
-      const botHighestRoleId = (await highestRole(guildID, botID))!.id;
-      const memberHighestRoleId = (await highestRole(guildID, memberID))!.id;
-      const authorHighestRoleId = (await highestRole(guildID, authorID))!.id;
-
-      const canBotBanMember = await higherRolePosition(guildID, botHighestRoleId, memberHighestRoleId)
-      const canAuthorBanMember = await higherRolePosition(guildID, authorHighestRoleId, memberHighestRoleId)
-
-      if (!(canBotBanMember && canAuthorBanMember)) {
-        const embed = new Embed()
-        .setColor("#F04747")
-        .setTitle("Could not Ban")
-        .setDescription("Cannot ban member with same or higher Roleposition than Author or Bot")
-        .setTimestamp();
-        return sendEmbed(channelID, embed);
+      if (
+        !botsHighestRole || !membersHighestRole ||
+        !(await higherRolePosition(
+          message.guildID,
+          botsHighestRole.id,
+          membersHighestRole.id,
+        ))
+      ) {
+        return;
       }
 
-      try {
-        const embed = new Embed()
-        .setColor("#F04747")
-        .setTitle(`Banned from ${message.member?.guild.name}`)
-        .addField("Banned By:", `<@${authorID}>`)
-        .addField("Reason:", reason)
-          .setTimestamp();
-        await args.member.sendDM({ embed });
-      } catch {}
+      if (
+        !modsHighestRole || !membersHighestRole ||
+        !(await higherRolePosition(
+          message.guildID,
+          modsHighestRole.id,
+          membersHighestRole.id,
+        ))
+      ) {
+        return;
+      }
+    } else {
+      if (!args.userID) return;
 
-
-      const banned = await args.member.ban(guildID, { reason, days }).catch((console.error));
-      if (!banned) return;
-
-      const embed = new Embed()
-        .setColor("#F04747")
-        .setTitle(`Banned User`)
-        .setThumbnail(args.member.avatarURL)
-        .addField("User:", args.member.mention, true)
-        .addField("Banned By:", `<@${authorID}>`, true)
-        .addField("Reason:", reason)
-        .addField("Deleted Message History:", `${days} Days`)
-        .setTimestamp();
-
-      return sendEmbed(channelID, embed);
-    } catch (error) {
-      return message.reply("Attempt to ban user has failed!");
+      const banned = await message.guild?.bans();
+      if (banned?.has(args.userID)) return;
     }
+
+    const userID = args.member?.id || args.userID!;
+
+    const REASON = args.reason ||
+      translate(message.guildID, "strings:NO_REASON");
+    await sendDirectMessage(
+      userID,
+      `**__You have been banned__\nServer:** *${guild.name}*\n**Moderator:** *${message.author.username}*\n**Reason:** *${REASON}*`,
+    ).catch(console.log);
+
+    ban(message.guildID, userID, {
+      days: 1,
+      reason: REASON,
+    });
+
+    botCache.helpers.createModlog(
+      message,
+      {
+        action: "ban",
+        reason: REASON,
+        member: args.member,
+        userID: userID,
+      },
+    );
+
+    return;
   },
 });
-
-interface BanArgs {
-  member: Member;
-  reason: string;
-  days: 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
-}

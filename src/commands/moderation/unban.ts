@@ -1,40 +1,39 @@
-import { Embed } from "./../../utils/Embed.ts";
-import { sendEmbed, createCommand } from "./../../utils/helpers.ts";
+import { botCache } from "../../../deps.ts";
+import { PermissionLevels } from "../../types/commands.ts";
+import { getBan, sendDirectMessage, unban } from "../../../deps.ts";
+import { createCommand } from "../../utils/helpers.ts";
 
 createCommand({
   name: `unban`,
-  guildOnly: true,
-  arguments: [
-    {
-      name: "memberId",
-      type: "snowflake",
-      missing: (message) => {
-        return message.reply("User not found!");
-      },
-    },
-  ],
-  userServerPermissions: ["BAN_MEMBERS"],
+  permissionLevels: [PermissionLevels.MODERATOR, PermissionLevels.ADMIN],
   botServerPermissions: ["BAN_MEMBERS"],
-  botChannelPermissions: ["VIEW_CHANNEL", "SEND_MESSAGES", "EMBED_LINKS"],
-  execute: async (message, args: UnbanArgs) => {
-    try {
-      await message.guild?.unban(args.memberId);
+  arguments: [
+    { name: "userID", type: "snowflake" },
+    { name: "reason", type: "...string" },
+  ] as const,
+  guildOnly: true,
+  execute: async function (message, args, guild) {
+    if (!guild) return;
 
-      const embed = new Embed()
-        .setColor("#43b581")
-        .setTitle(`Unbanned User`)
-        .setThumbnail(message.member!.avatarURL)
-        .addField("User ID:", args.memberId, true)
-        .addField("Unbanned By:", `<@${message.author.id}>`, true)
-        .setTimestamp();
+    const banned = await getBan(message.guildID, args.userID);
+    if (!banned) return;
 
-      return sendEmbed(message.channelID, embed);
-    } catch (error) {
-      return message.reply("Attempt to unban user has failed!");
-    }
+    await sendDirectMessage(
+      args.userID,
+      `**__You have been unbanned__\nServer:** *${guild.name}*\n**Moderator:** *${message.author.username}*\n**Reason:** *${args.reason}*`,
+    ).catch(console.log);
+
+    unban(message.guildID, args.userID).catch(console.log);
+
+    botCache.helpers.createModlog(
+      message,
+      {
+        action: "unban",
+        reason: args.reason,
+        userID: args.userID,
+      },
+    );
+
+    return;
   },
 });
-
-interface UnbanArgs {
-  memberId: string;
-}

@@ -1,38 +1,65 @@
-import { botCache, Intents, startBot } from "./deps.ts";
-import { configs } from "./configs.ts";
-import { fileLoader, importDirectory } from "./src/utils/helpers.ts";
+import {
+  fileLoader,
+  importDirectory,
+} from "./src/utils/helpers.ts";
 import { loadLanguages } from "./src/utils/i18next.ts";
+import { configs } from "./configs.ts";
+import { botCache, Intents, startBot } from "./deps.ts";
 
 console.info(
   "Beginning Bot Startup Process. This can take a little bit depending on your system. Loading now...",
 );
 
-// Forces deno to read all the files which will fill the commands/inhibitors cache etc.
+// await importDirectory(Deno.realPathSync("./src/structures"));
+await importDirectory(Deno.realPathSync("./src/controllers"));
+
+// Load these first before anything else so they are available for the rest.
+await importDirectory(Deno.realPathSync("./src/constants"));
+await importDirectory(Deno.realPathSync("./src/helpers"));
+await importDirectory(Deno.realPathSync("./src/events"));
+await fileLoader();
+
+// The order of these is not important.
 await Promise.all(
   [
     "./src/commands",
     "./src/inhibitors",
-    "./src/events",
     "./src/arguments",
     "./src/monitors",
     "./src/tasks",
     "./src/permissionLevels",
-    "./src/events",
   ].map(
     (path) => importDirectory(Deno.realPathSync(path)),
   ),
 );
 await fileLoader();
 
+if (!botCache.commands.size) throw "No commands loaded";
+if (!botCache.arguments.size) throw "No args loaded";
+
+console.info("Loading Languages...");
 // Loads languages
 await loadLanguages();
+console.info("Loading Database");
+
 await import("./src/database/database.ts");
+console.log("Loaded Database, starting bot...");
 
 startBot({
   token: configs.token,
   // Pick the intents you wish to have for your bot.
-  // For instance, to work with guild message reactions, you will have to pass the Intents.GUILD_MESSAGE_REACTIONS intent to the array.
-  intents: [Intents.GUILDS, Intents.GUILD_MESSAGES],
+  intents: [
+    Intents.GUILDS,
+    Intents.GUILD_MESSAGES,
+    Intents.DIRECT_MESSAGES,
+    Intents.GUILD_MEMBERS,
+    Intents.GUILD_BANS,
+    Intents.GUILD_EMOJIS,
+    Intents.GUILD_VOICE_STATES,
+    Intents.GUILD_INVITES,
+    Intents.GUILD_MESSAGE_REACTIONS,
+    Intents.DIRECT_MESSAGE_REACTIONS,
+  ],
   // These are all your event handler functions. Imported from the events folder
   eventHandlers: botCache.eventHandlers,
 });

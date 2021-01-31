@@ -9,7 +9,6 @@ export const configs = {
   prefix: "!",
   // This isn't required but you can add bot list api keys here.
   botListTokens: {
-    DISCORD_BOTS_CO: "",
     DISCORD_BOT_ORG: "",
     BOTS_ON_DISCORD: "",
     DISCORD_BOT_LIST: "",
@@ -17,6 +16,14 @@ export const configs = {
     DISCORD_BOATS: "",
     DISCORD_BOTS_GG: "",
     DISCORD_BOTS_GROUP: "",
+  },
+  // Your Imgur Client ID
+  imgur: "",
+  // Custom Database settings
+  database: {
+    // Your mongodb atlas connection url string here
+    connectionURL: "",
+    name: "dev",
   },
   // This is the server id for your bot's main server where users can get help/support
   supportServerID: "",
@@ -26,11 +33,17 @@ export const configs = {
     missingTranslation: "",
     // When an error occurs, we will try and log it to this channel
     errorChannelID: "",
+    // When a server gets added/removed the bot will log it to this channel
+    serverStats: "",
   },
   // These are the role ids that will enable some functionality.
   roleIDs: {
     // If you have a patreon set up you can add the patreon vip role id here.
-    patreonVIPRoleID: "",
+    patreonRoleIDs: {
+      firstTier: "",
+      secondTier: "",
+      thirdTier: "",
+    },
   },
   // These are the user ids that will enable some functionality.
   userIDs: {

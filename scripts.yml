@@ -1,13 +1,17 @@
 scripts:
   start:
     desc: Starts the bot.
-    cmd: deno run --allow-net --allow-read --allow-write mod.ts
+    cmd: deno run --allow-net --allow-write --allow-read --no-check --allow-run mod.ts
   reload:
-    desc: Starts the bot.
-    cmd: deno run --allow-net --allow-read --allow-write -r mod.ts
+    desc: Starts the bot after reloading cache.
+    cmd: deno run --allow-net --allow-write --allow-read --no-check -r --allow-run --config tsconfig.json mod.ts
   update:
-    desc: Reloads the cached library modules
+    desc: Updates to the latest(non-breaking) changes of CURRENT Discordeno version.
     cmd: deno cache --reload mod.ts
   dev:
-    desc: Reloads the cache and then starts the bot.
+    desc: Updates Discordeno and starts the bot.
     cmd: vr update && vr start
+  fmt:
+    desc: Formats the code using deno fmt
+    cmd: deno fmt **/*.ts
+

@@ -1,4 +1,6 @@
-import { Errors, Message, sendMessage } from "../../deps.ts";
+import type { Message } from "../../deps.ts";
+
+import { Errors, sendMessage } from "../../deps.ts";
 
 function missingPermResponse(permission: string) {
   const perm = permission.split("_").slice(1).join(" ");
@@ -11,7 +13,7 @@ export function handleError(message: Message, type: Errors) {
       return sendMessage(
         message.channelID,
         missingPermResponse(type),
-      ).catch(() => undefined);
+      ).catch(console.log);
     case Errors.MISSING_MANAGE_ROLES:
     case Errors.MISSING_KICK_MEMBERS:
     case Errors.MISSING_VIEW_CHANNEL:
@@ -72,7 +74,5 @@ export function handleError(message: Message, type: Errors) {
         message.channelID,
         "This function is only able to be done inside a server. This channel was not found in any server.",
       );
-    default:
-      return;
   }
 }

@@ -1,29 +1,23 @@
-import { Milliseconds } from "../utils/constants/time.ts";
-import { botCache, botID, cache } from "../../deps.ts";
+import { botCache, botID, cache, sendMessage } from "../../deps.ts";
 import { configs } from "../../configs.ts";
+import { Embed } from "../utils/Embed.ts";
 
 botCache.tasks.set(`botlists`, {
   name: `botlists`,
   // Runs this function once an hour
-  interval: Milliseconds.HOUR,
+  interval: botCache.constants.milliseconds.HOUR,
   execute: async function () {
     // Only run when the bot is fully ready. In case guilds are still loading dont want to send wrong stats.
-    if (!cache.isReady) return;
+    if (!botCache.fullyReady) return;
 
     const totalUsers = cache.guilds.map((g) => g.memberCount).reduce(
       (a, b) => a + b,
       0,
     );
-    const totalGuilds = cache.guilds.size;
+    const totalGuilds = cache.guilds.size + botCache.dispatchedGuildIDs.size;
 
     // Make the variable here to get the guild count accurately
     const botLists = [
-      {
-        name: "discordbots.co",
-        url: `https://api.discordbots.co/v1/public/bot/${botID}/stats`,
-        token: configs.botListTokens.DISCORD_BOTS_CO,
-        data: { serverCount: totalGuilds },
-      },
       {
         name: "discordbots.gg",
         url: `https://discordbots.org/api/bots/${botID}/stats`,
@@ -76,7 +70,7 @@ botCache.tasks.set(`botlists`, {
       if (!list.token) continue;
       // Send update request to this bot list
       fetch(list.url, {
-        method: "POST",
+        method: "post",
         headers: {
           Authorization: list.token,
           "Content-Type": "application/json",
@@ -87,7 +81,7 @@ botCache.tasks.set(`botlists`, {
           `Update Bot Lists: [${list.name}] ${totalGuilds} Guilds | ${totalUsers} Users`,
         );
       }).catch((err) => {
-        console.error({ location: "botlists file", err });
+        console.log({ location: "botlists file", err });
       });
     }
   },

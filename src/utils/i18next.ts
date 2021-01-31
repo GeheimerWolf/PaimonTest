@@ -1,19 +1,66 @@
-import { botCache, cache, sendMessage } from "../../deps.ts";
-import i18next from "https://deno.land/x/i18next@v19.8.4/index.js";
-import Backend from "https://deno.land/x/i18next_fs_backend@v1.0.8-rc.1/index.js";
+import { botCache } from "../../deps.ts";
+import { cache, sendMessage } from "../../deps.ts";
+import i18next from "https://deno.land/x/i18next@v19.6.3/index.js";
+import Backend from "https://deno.land/x/i18next_fs_backend/index.js";
 import { configs } from "../../configs.ts";
 
 /** This function helps translate the string to the specific guilds needs. */
-export function translate(guildID: string, key: string, options?: unknown) {
+export function translate(
+  guildID: string,
+  key: string,
+  options: { returnObjects: true; [key: string]: unknown },
+): string[];
+export function translate(
+  guildID: string,
+  key: string,
+  options?: { returnObjects: false; [key: string]: unknown },
+): string;
+export function translate(
+  guildID: string,
+  key: string,
+  options?: Record<string, unknown>,
+): string;
+export function translate(
+  guildID: string,
+  key: string,
+  options?: Record<string, unknown>,
+) {
+  // SUPPORT LEGACY STRINGS
+  if (key === "") return "";
+
+  const guild = cache.guilds.get(guildID);
+  let language = botCache.guildLanguages.get(guildID) ||
+    guild?.preferredLocale || "en_US";
+
+  // Discord names some like `ru` and so we make it `ru_RU` for our json files
+  if (language.length === 2) {
+    language = `${language}_${language.toUpperCase()}`;
+  }
+
+  // undefined is silly bug cause i18next dont have proper typings
+  const languageMap =
+    i18next.getFixedT(language.replace("-", "_"), undefined) ||
+    i18next.getFixedT("en_US", undefined);
+
+  return languageMap(key, options);
+}
+
+/** This function helps translate the string to the specific guilds needs. This is meant for translating a full array of strings. */
+export function translateArray(
+  guildID: string,
+  key: string,
+  options?: Record<string, unknown>,
+): string[] {
   const guild = cache.guilds.get(guildID);
   const language = botCache.guildLanguages.get(guildID) ||
     guild?.preferredLocale || "en_US";
 
   // undefined is silly bug cause i18next dont have proper typings
-  const languageMap = i18next.getFixedT(language, undefined) ||
+  const languageMap =
+    i18next.getFixedT(language.replace("-", "_"), undefined) ||
     i18next.getFixedT("en_US", undefined);
 
-  return languageMap(key, options);
+  return languageMap(key, { ...options, returnObjects: true });
 }
 
 export async function determineNamespaces(
@@ -30,7 +77,7 @@ export async function determineNamespaces(
       namespaces = await determineNamespaces(
         `${path}/${file.name}`,
         namespaces,
-        isLanguage ? "" : `${folderName + file.name}/`,
+        isLanguage ? "" : `${file.name}/`,
       );
     } else {
       namespaces.push(
@@ -60,14 +107,15 @@ export async function loadLanguages() {
       lng: "en_US",
       saveMissing: true,
       // Log to discord/console that a string is missing somewhere.
-      missingKeyHandler: function (
+      missingKeyHandler: async function (
         lng: string,
         ns: string,
         key: string,
         fallbackValue: string,
       ) {
-        const response =
-          `Missing translation key: ${lng}/${ns}/${key}. Instead using: ${fallbackValue}`;
+        const response = `${
+          configs.userIDs.botDevs.map((id) => `<@${id}>`).join(" ")
+        } Missing translation key: ${ns}:${key} for ${lng} language. Instead using: ${fallbackValue}`;
         console.warn(response);
 
         if (!configs.channelIDs.missingTranslation) return;
@@ -77,10 +125,34 @@ export async function loadLanguages() {
         );
         if (!channel) return;
 
-        sendMessage(
+        const args = key.split("_");
+        if (
+          key.endsWith("_USAGE") &&
+          botCache.commands.has(args[0]?.toLowerCase())
+        ) {
+          return;
+        }
+
+        if (
+          [
+            "INVITES",
+            "SERVERS",
+            "PERMS",
+            "MESSAGES",
+            "CHANNELS",
+            "ROLES",
+            "BOTS",
+            "NITRO",
+            "HYPESQUADS",
+          ].some((ignore) => key.startsWith(ignore)) && key.endsWith("NOTE")
+        ) {
+          return;
+        }
+
+        await sendMessage(
           channel.id,
           response,
-        );
+        ).catch(console.log);
       },
       preload: languageFolder.map(
         (file) => file.isDirectory ? file.name : undefined,
@@ -93,12 +165,4 @@ export async function loadLanguages() {
       },
       // Silly bug in i18next needs a second param when unnecessary
     }, undefined);
-}
-
-export async function reloadLang(language?: string[]) {
-  const namespaces = await determineNamespaces(
-    Deno.realPathSync("./src/languages"),
-  );
-
-  i18next.reloadResources(language, namespaces, undefined);
 }

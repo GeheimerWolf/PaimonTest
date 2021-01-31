@@ -1,4 +1,4 @@
-import type { Collection, Message, Guild, Permission } from "../../deps.ts";
+import type { Collection, Guild, Message, Permission } from "../../deps.ts";
 
 export interface Command {
   name: string;
