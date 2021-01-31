@@ -16,6 +16,7 @@ import {
   removeUserReaction,
   sendMessage,
 } from "../../deps.ts";
+import { recentlyCreatedEventIDs } from "../commands/gaming/events/card.ts";
 import { db } from "../database/database.ts";
 import { humanizeMilliseconds, sendAlertMessage } from "../utils/helpers.ts";
 import { translate } from "../utils/i18next.ts";
@@ -237,6 +238,8 @@ async function handleEventReaction(
           if (id) acceptedUsers.push(id);
         }
 
+        await botCache.helpers.reactSuccess(message);
+
         // Remove them from the event
         await db.events.update(event.id, {
           acceptedUsers,
@@ -288,6 +291,7 @@ async function handleEventReaction(
                 (user) => user.position === position.name
               ).length
           ) {
+            await botCache.helpers.reactError(positionResponse);
             // Delete both messages to keep it clean
             await delay(2000);
             return deleteMessages(message.channelID, [
@@ -327,6 +331,14 @@ async function handleEventReaction(
       });
       break;
   }
+
+  recentlyCreatedEventIDs.add(event.eventID);
+  // Trigger the card
+  botCache.commands.get("events")?.subcommands?.get("card")?.execute?.(
+    message,
+    // @ts-ignore
+    { eventID: event.eventID }
+  );
 }
 
 async function handleGiveawayReaction(

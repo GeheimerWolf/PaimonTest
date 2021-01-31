@@ -27,14 +27,14 @@ createCommand({
     if (!guild) return;
 
     const settings = await db.guilds.get(message.guildID);
-    if (!settings?.muteRoleID) return;
+    if (!settings?.muteRoleID) return botCache.helpers.reactError(message);
     const memberRoles = args.member.guilds.get(message.guildID)?.roles || [];
     if (!memberRoles.includes(settings.muteRoleID)) {
-      return;
+      return botCache.helpers.reactError(message);
     }
 
     const muteRole = guild.roles.get(settings.muteRoleID);
-    if (!muteRole) return;
+    if (!muteRole) return botCache.helpers.reactError(message);
 
     const botsHighestRole = await highestRole(message.guildID, botID);
     const membersHighestRole = await highestRole(
@@ -54,7 +54,7 @@ createCommand({
         membersHighestRole.id,
       ))
     ) {
-      return;
+      return botCache.helpers.reactError(message);
     }
 
     if (
@@ -65,11 +65,11 @@ createCommand({
         membersHighestRole.id,
       ))
     ) {
-      return;
+      return botCache.helpers.reactError(message);
     }
 
     const muted = await db.mutes.get(`${args.member.id}-${message.guildID}`);
-    if (!muted) return;
+    if (!muted) return botCache.helpers.reactError(message);
 
     const roleIDs = new Set([...memberRoles, ...muted.roleIDs]);
     roleIDs.delete(muteRole.id);

@@ -43,7 +43,7 @@ createCommand({
           membersHighestRole.id,
         ))
       ) {
-        return;
+        return botCache.helpers.reactError(message);
       }
 
       if (
@@ -54,13 +54,13 @@ createCommand({
           membersHighestRole.id,
         ))
       ) {
-        return;
+        return botCache.helpers.reactError(message);
       }
     } else {
-      if (!args.userID) return;
+      if (!args.userID) return botCache.helpers.reactError(message);
 
       const banned = await message.guild?.bans();
-      if (banned?.has(args.userID)) return;
+      if (banned?.has(args.userID)) return botCache.helpers.reactError(message);
     }
 
     const userID = args.member?.id || args.userID!;
@@ -87,6 +87,6 @@ createCommand({
       },
     );
 
-    return;
+    return botCache.helpers.reactSuccess(message);
   },
 });

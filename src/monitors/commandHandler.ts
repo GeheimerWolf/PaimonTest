@@ -1,6 +1,4 @@
 import { configs } from "../../configs.ts";
-import { getTime } from "../utils/helpers.ts";
-import { handleError } from "../utils/errors.ts";
 import {
   bgBlack,
   bgBlue,
@@ -11,15 +9,56 @@ import {
   botCache,
   botID,
   cache,
+  delay,
+  deleteMessage,
   green,
   Guild,
   Message,
   red,
   white,
 } from "../../deps.ts";
-import { Command } from "../types/commands.ts";
+import { db } from "../database/database.ts";
+import { handleError } from "../utils/errors.ts";
+import { Command, getTime, sendResponse } from "../utils/helpers.ts";
+import { translate } from "../utils/i18next.ts";
 
-export const parsePrefix = (guildID?: string) => {
+async function invalidCommand(
+  message: Message,
+  commandName: string,
+  parameters: string[],
+  prefix: string
+) {
+  if (!message.guildID) return;
+  if (!botCache.vipGuildIDs.has(message.guildID)) return;
+
+  const shortcut = await db.shortcuts.get(`${message.guildID}-${commandName}`);
+  if (!shortcut) return;
+
+  // Valid shortcut was found now we need to process it
+  for (const action of shortcut.actions) {
+    const command = botCache.commands.get(action.commandName);
+    if (!command) continue;
+
+    let content = `${prefix}${action.commandName} ${action.args}`;
+
+    // Replace all variables args in the shortcut
+    for (const [index, arg] of parameters.entries()) {
+      content = content.replace(`{{${index + 1}}}`, arg);
+    }
+
+    message.content = content;
+
+    // Execute the command
+    await botCache.eventHandlers.messageCreate?.(message);
+
+    // Make the bot wait 2 seconds before running next command so it doesnt get inhibited by the slowmode
+    await delay(2000);
+  }
+
+  if (shortcut.deleteTrigger) await deleteMessage(message).catch(console.log);
+}
+
+export const parsePrefix = (guildID: string | undefined) => {
   const prefix = guildID ? botCache.guildPrefixes.get(guildID) : configs.prefix;
   return prefix || configs.prefix;
 };
@@ -37,38 +76,43 @@ export const parseCommand = (commandName: string) => {
 export const logCommand = (
   message: Message,
   guildName: string,
-  type: "Failure" | "Success" | "Trigger" | "Slowmode" | "Missing",
-  commandName: string,
+  type: "Failure" | "Success" | "Trigger" | "Slowmode" | "Missing" | "Inhibit",
+  commandName: string
 ) => {
-  const command = `[COMMAND: ${bgYellow(black(commandName))} - ${
-    bgBlack(
-      ["Failure", "Slowmode", "Missing"].includes(type)
-        ? red(type)
-        : type === "Success"
-        ? green(type)
-        : white(type),
-    )
-  }]`;
+  if (type === "Trigger") {
+    botCache.stats.commandsRan += 1;
+  }
+  const command = `[COMMAND: ${bgYellow(
+    black(commandName || "Unknown")
+  )} - ${bgBlack(
+    ["Failure", "Slowmode", "Missing"].includes(type)
+      ? red(type)
+      : type === "Success"
+      ? green(type)
+      : white(type)
+  )}]`;
 
   const user = bgGreen(
     black(
-      `${message.author.username}#${message.author.discriminator}(${message.author.id})`,
-    ),
+      `${message.author.username}#${message.author.discriminator}(${message.author.id})`
+    )
   );
   const guild = bgMagenta(
-    black(`${guildName}${message.guildID ? `(${message.guildID})` : ""}`),
+    black(`${guildName}${message.guildID ? `(${message.guildID})` : ""}`)
   );
 
   console.log(
-    `${bgBlue(`[${getTime()}]`)} => ${command} by ${user} in ${guild}`,
+    `${bgBlue(
+      `[${getTime()}]`
+    )} => ${command} by ${user} in ${guild} with MessageID: ${message.id}`
   );
 };
 
 /** Parses all the arguments for the command based on the message sent by the user. */
 async function parseArguments(
   message: Message,
-  command: Command,
-  parameters: string[],
+  command: Command<any>,
+  parameters: string[]
 ) {
   const args: { [key: string]: unknown } = {};
   if (!command.arguments) return args;
@@ -99,9 +143,8 @@ async function parseArguments(
     // Invalid arg provided.
     if (Object.prototype.hasOwnProperty.call(argument, "defaultValue")) {
       args[argument.name] = argument.defaultValue;
-    } else if (command.subcommands?.has(parameters[0])) {
-      continue;
     } else if (argument.required !== false) {
+      // console.log("Required Arg Missing: ", message.content, command, argument);
       missingRequiredArg = true;
       argument.missing?.(message);
       break;
@@ -115,70 +158,60 @@ async function parseArguments(
 /** Runs the inhibitors to see if a command is allowed to run. */
 async function commandAllowed(
   message: Message,
-  command: Command,
-  guild?: Guild,
+  command: Command<any>,
+  guild?: Guild
 ) {
   const inhibitorResults = await Promise.all(
-    botCache.inhibitors.map(async (inhibitor, name) => {
-      const inhibited = await inhibitor(message, command, guild);
-      return [name, inhibited];
-    }),
+    [...botCache.inhibitors.values()].map((inhibitor) =>
+      inhibitor(message, command, guild)
+    )
   );
 
-  let allowed = true;
-
-  for (const result of inhibitorResults) {
-    const [name, inhibited] = result;
-    if (inhibited) {
-      // Make sure the command will not run
-      allowed = false;
-      // Logs the command failure
-      logCommand(message, guild?.name || "DM", "Failure", command.name);
-      // Logs the exact inhibitors that failed
-      console.log(
-        `[Inhibitor] ${name} on ${command.name} for ${message.author.username}#${message.author.discriminator}`,
-      );
-    }
+  if (inhibitorResults.includes(true)) {
+    logCommand(message, guild?.name || "DM", "Inhibit", command.name);
+    return false;
   }
 
-  return allowed;
+  return true;
 }
 
 async function executeCommand(
   message: Message,
-  command: Command,
+  command: Command<any>,
   parameters: string[],
-  guild?: Guild,
+  guild?: Guild
 ) {
   try {
+    botCache.slowmode.set(message.author.id, message.timestamp);
+
     // Parsed args and validated
-    const args = (await parseArguments(message, command, parameters)) as
-      | {
-        [key: string]: unknown;
-      }
-      | false;
+    const args = await parseArguments(message, command, parameters);
     // Some arg that was required was missing and handled already
     if (!args) {
+      await botCache.helpers.reactError(message);
       return logCommand(message, guild?.name || "DM", "Missing", command.name);
     }
 
     // If no subcommand execute the command
     const [argument] = command.arguments || [];
-    let subcommand = argument ? (args[argument.name] as Command) : undefined;
+    const subcommand = argument
+      ? (args[argument.name] as Command<any>)
+      : undefined;
 
     if (!argument || argument.type !== "subcommand" || !subcommand) {
       // Check subcommand permissions and options
       if (!(await commandAllowed(message, command, guild))) return;
 
+      // @ts-ignore
       await command.execute?.(message, args, guild);
+      await botCache.helpers.completeMission(
+        message.guildID,
+        message.author.id,
+        command.name
+      );
       return logCommand(message, guild?.name || "DM", "Success", command.name);
     }
 
-    if (!subcommand?.name) {
-      subcommand = command?.subcommands?.get(
-        (subcommand as unknown) as string,
-      ) as Command;
-    }
     // A subcommand was asked for in this command
     if (
       ![subcommand.name, ...(subcommand.aliases || [])].includes(parameters[0])
@@ -190,7 +223,8 @@ async function executeCommand(
     }
   } catch (error) {
     logCommand(message, guild?.name || "DM", "Failure", command.name);
-    console.error(error);
+    await botCache.helpers.reactError(message).catch(console.log);
+    console.log(error);
     handleError(message, error);
   }
 }
@@ -209,21 +243,42 @@ botCache.monitors.set("commandHandler", {
 
     // If the message is not using the valid prefix or bot mention cancel the command
     if (message.content === botMention) {
-      return message.reply(parsePrefix(message.guildID));
+      return sendResponse(message, parsePrefix(message.guildID));
     } else if (message.content.startsWith(botMention)) prefix = botMention;
     else if (!message.content.startsWith(prefix)) return;
 
     // Get the first word of the message without the prefix so it is just command name. `!ping testing` becomes `ping`
-    const [commandName, ...parameters] = message.content.substring(
-      prefix.length,
-    ).split(" ");
+    const [commandName, ...parameters] = message.content
+      .substring(prefix.length)
+      .split(" ");
 
     // Check if this is a valid command
     const command = parseCommand(commandName);
-    if (!command) return;
+    if (!command) {
+      return invalidCommand(message, commandName, parameters, prefix);
+    }
 
-    logCommand(message, message.guild?.name || "DM", "Trigger", commandName);
+    const guild = cache.guilds.get(message.guildID);
+    logCommand(message, guild?.name || "DM", "Trigger", commandName);
 
-    return executeCommand(message, command, parameters, message.guild);
+    const lastUsed = botCache.slowmode.get(message.author.id);
+    // Check if this user is spamming by checking slowmode
+    if (lastUsed && message.timestamp - lastUsed < 2000) {
+      await deleteMessage(
+        message,
+        translate(message.guildID, "strings:CLEAR_SPAM")
+      ).catch(console.log);
+      return logCommand(message, guild?.name || "DM", "Slowmode", commandName);
+    }
+
+    // Check if this user is blacklisted. Check if this guild is blacklisted
+    if (
+      botCache.blacklistedIDs.has(message.author.id) ||
+      botCache.blacklistedIDs.has(message.guildID)
+    ) {
+      return;
+    }
+
+    executeCommand(message, command, parameters, guild);
   },
 });

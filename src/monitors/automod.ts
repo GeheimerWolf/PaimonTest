@@ -254,6 +254,15 @@ function capitalSpamFilter(text: string, capitalPercentage = 100) {
   let characterCount = 0;
 
   for (const letter of text) {
+    for (
+      const language of [
+        botCache.constants.alphabet.english,
+        botCache.constants.alphabet.russian,
+      ]
+    ) {
+      if (language.lowercase.includes(letter)) lowercaseCount++;
+      else if (language.uppercase.includes(letter)) uppercaseCount++;
+    }
 
     if (letter !== " ") characterCount++;
   }

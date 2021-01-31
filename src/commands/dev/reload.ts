@@ -52,7 +52,7 @@ createCommand({
       console.info("Loading Languages...");
       // Loads languages
       await loadLanguages();
-      return;
+      return botCache.helpers.reactSuccess(message);
     }
     // Reload a specific folder
     if (args.folder) {

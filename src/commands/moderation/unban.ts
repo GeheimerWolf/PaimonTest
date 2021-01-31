@@ -13,10 +13,10 @@ createCommand({
   ] as const,
   guildOnly: true,
   execute: async function (message, args, guild) {
-    if (!guild) return;
+    if (!guild) return botCache.helpers.reactError(message);
 
     const banned = await getBan(message.guildID, args.userID);
-    if (!banned) return;
+    if (!banned) return botCache.helpers.reactError(message);
 
     await sendDirectMessage(
       args.userID,
@@ -34,6 +34,6 @@ createCommand({
       },
     );
 
-    return;
+    return botCache.helpers.reactSuccess(message);
   },
 });

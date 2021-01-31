@@ -18,7 +18,7 @@ createCommand({
         return botCache.commands.get("reload")?.execute?.(message, {}, guild);
       default:
         await Deno.run({ cmd: "git pull".split(" ") }).status();
-        return Deno.run({ cmd: "pm2 restart 0".split(" ") });
+        return Deno.run({ cmd: "pm2 restart gamer".split(" ") });
     }
   },
 });

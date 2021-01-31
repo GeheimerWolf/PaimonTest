@@ -58,7 +58,7 @@ createCommand({
       });
     }
 
-    if (!result) return;
+    if (!result) return botCache.helpers.reactError(message);
 
     const responses = botCache.helpers.chunkStrings(
       result.split(" "),

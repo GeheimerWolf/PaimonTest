@@ -9,17 +9,16 @@ import {
   WelcomeSchema,
 } from "./src/database/schemas.ts";
 import { MessageCollector, ReactionCollector } from "./src/types/collectors.ts";
-import { Argument, PermissionLevels } from "./src/types/commands.ts";
+import { PermissionLevels } from "./src/types/commands.ts";
 import { Constants, Mission } from "./src/types/constants.ts";
 import { CustomEvents } from "./src/types/events.ts";
 import { Helpers } from "./src/types/helpers.ts";
 import { Monitor } from "./src/types/monitors.ts";
 import { Task } from "./src/types/tasks.ts";
-import { Command } from "./src/utils/helpers.ts";
+import { Argument, Command } from "./src/utils/helpers.ts";
 
 export const botCache = {
   fullyReady: false,
-  runningTasks: [] as number[],
   dispatchedGuildIDs: new Set<string>(),
   dispatchedChannelIDs: new Set<string>(),
   arguments: new Collection<string, Argument>(),

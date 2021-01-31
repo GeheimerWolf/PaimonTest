@@ -39,7 +39,7 @@ createCommand({
           membersHighestRole.id,
         ))
       ) {
-        return;
+        return botCache.helpers.reactError(message);
       }
 
       if (
@@ -50,10 +50,10 @@ createCommand({
           membersHighestRole.id,
         ))
       ) {
-        return;
+        return botCache.helpers.reactError(message);
       }
     } else {
-      if (!args.member) return;
+      if (!args.member) return botCache.helpers.reactError(message);
     }
 
     await sendDirectMessage(
@@ -71,6 +71,6 @@ createCommand({
       },
     );
 
-    return;
+    return botCache.helpers.reactSuccess(message);
   },
 });

@@ -22,7 +22,7 @@ createSubcommand("remind", {
     if (!reminders.length) return botCache.helpers.reactError(message);
 
     const member = cache.members.get(message.author.id);
-    if (!member) return;
+    if (!member) return botCache.helpers.reactError(message);
 
     const embed = new Embed()
       .setAuthor(member.tag, member.avatarURL);

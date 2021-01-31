@@ -1,4 +1,5 @@
 import { createSubcommand } from "../../../utils/helpers.ts";
+import { botCache } from "../../../../deps.ts";
 import { db } from "../../../database/database.ts";
 
 createSubcommand("remind", {
@@ -25,5 +26,7 @@ createSubcommand("remind", {
       timestamp: message.timestamp + args.start,
       interval: args.interval,
     });
+
+    await botCache.helpers.reactSuccess(message);
   },
 });

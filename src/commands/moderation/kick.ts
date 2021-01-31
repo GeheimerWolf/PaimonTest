@@ -41,7 +41,7 @@ createCommand({
         membersHighestRole.id,
       ))
     ) {
-      return;
+      return botCache.helpers.reactError(message);
     }
 
     if (
@@ -52,7 +52,7 @@ createCommand({
         membersHighestRole.id,
       ))
     ) {
-      return;
+      return botCache.helpers.reactError(message);
     }
 
     const REASON = args.reason ||
@@ -66,7 +66,7 @@ createCommand({
       console.log,
     );
     if (!kicked) {
-      return;
+      return botCache.helpers.reactSuccess(message);
     }
 
     botCache.helpers.createModlog(
@@ -79,6 +79,6 @@ createCommand({
       },
     );
 
-    return;
+    return botCache.helpers.reactSuccess(message);
   },
 });

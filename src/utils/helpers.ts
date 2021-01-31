@@ -1,4 +1,3 @@
-  
 import {
   botCache,
   botHasChannelPermissions,
@@ -410,12 +409,16 @@ export interface Command<T extends readonly ArgumentDefinition[]> {
     seconds: number;
     allowedUses?: number;
   };
-  arguments?: T | CommandArgument[];
+  arguments?: T;
   subcommands?: Collection<string, Command<T>>;
   usage?: string | string[];
   vipServerOnly?: boolean;
   vipUserOnly?: boolean;
-  execute?: (message: Message, args: any, guild?: Guild) => unknown;
+  execute?: (
+    message: Message,
+    args: ConvertArgumentDefinitionsToArgs<T>,
+    guild?: Guild,
+  ) => unknown | Promise<unknown>;
 }
 
 export interface Argument {
@@ -528,8 +531,7 @@ export async function sendEmbed(
   channelID: string,
   embed: Embed,
   content?: string,
-) 
-{
+) {
   const channel = cache.channels.get(channelID);
   if (!channel) return;
 
@@ -569,32 +571,37 @@ export async function importDirectory(path: string) {
 
     const currentPath = `${path}/${file.name}`.replaceAll("\\", "/");
     if (file.isFile) {
+      if (!currentPath.endsWith(".ts")) continue;
       paths.push(
-        `import "./${
-          currentPath.substring(currentPath.indexOf("src/"))
-        }#${uniqueFilePathCounter}";`,
+        `import "${Deno.mainModule.substring(
+          0,
+          Deno.mainModule.lastIndexOf("/")
+        )}/${currentPath.substring(
+          currentPath.indexOf("src/")
+        )}#${uniqueFilePathCounter}";`
       );
       continue;
     }
 
-    importDirectory(currentPath);
+    await importDirectory(currentPath);
   }
+
   uniqueFilePathCounter++;
 }
 
+/** Imports everything using fileloader.ts */
 export async function fileLoader() {
-  await Deno.writeTextFile("fileloader.ts", paths.join("\n"));
-  console.log(Deno.cwd() + "/fileloader.ts");
-  console.log(
-    `file:///` + Deno.cwd() + `/fileloader.ts#${uniqueFilePathCounter}`,
-  );
-  console.log(`file:///fileloader.ts#${uniqueFilePathCounter}`);
-  console.log(
-    `file:///${Deno.realPathSync("./fileloader.ts")}#${uniqueFilePathCounter}`,
+  await Deno.writeTextFile(
+    "fileloader.ts",
+    paths.join("\n").replaceAll("\\", "/")
   );
   await import(
-    `file:///${Deno.realPathSync("./fileloader.ts")}#${uniqueFilePathCounter}`
+    `${Deno.mainModule.substring(
+      0,
+      Deno.mainModule.lastIndexOf("/")
+    )}/fileloader.ts#${uniqueFilePathCounter}`
   );
+  paths = []
 }
 
 export function getTime() {

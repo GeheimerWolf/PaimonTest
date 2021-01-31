@@ -1,4 +1,6 @@
 import { Collection, Image } from "../../deps.ts";
+import { IdleSchema } from "../database/schemas.ts";
+
 export interface Constants {
   brand: {
     KICK_COLOR: string;
@@ -18,9 +20,81 @@ export interface Constants {
   backgrounds: Background[];
   missions: Mission[];
   levels: Collection<number, { name: string; xpNeeded: number; id: number }>;
+  idle: {
+    boostEmoji: "💵";
+    items: [
+      "friends",
+      "servers",
+      "channels",
+      "roles",
+      "perms",
+      "messages",
+      "invites",
+      "bots",
+      "hypesquads",
+      "nitro",
+    ];
+    constants: {
+      friends: IdleItem;
+      servers: IdleItem;
+      channels: IdleItem;
+      roles: IdleItem;
+      perms: IdleItem;
+      messages: IdleItem;
+      invites: IdleItem;
+      bots: IdleItem;
+      hypesquads: IdleItem;
+      nitro: IdleItem;
+    };
+    engine: {
+      /** This function will be processing the amount of currency users have everytime they use a command to view their currency i imagine */
+      process: (
+        profile: IdleSchema,
+      ) => { currency: bigint; lastUpdatedAt: number };
+      calculateTotalProfit: (profile: IdleSchema) => bigint;
+      calculateProfit: (
+        level: number,
+        baseProfit?: number,
+        prestige?: number,
+      ) => bigint;
+      calculateUpgradeCost: (baseCost: number, level: number) => number;
+      /** Takes the current user currency, the cost of the item, and how much currency the user is gaining per second and converts it to milliseconds until this item can be bought. */
+      calculateMillisecondsTillBuyable: (
+        currency: bigint,
+        cost: bigint,
+        perSecond: bigint,
+      ) => bigint;
+      /** Gets ms into human readable format like 1d5h3m2s */
+      isEpicUpgrade: (level: number) => boolean;
+    };
+  };
+  gacha: {
+    zooba: {
+      characters: GameCharacter[];
+      items: GameItem[];
+      abilities: GameAbility[];
+    };
+    foods: GameFood[];
+    rarities: {
+      [key: number]: string;
+    };
+  };
   profanity: {
     soft: string[];
     strict: string[];
+  };
+  alphabet: {
+    english: {
+      lowercase: string[];
+      uppercase: string[];
+    };
+    russian: {
+      lowercase: string[];
+      uppercase: string[];
+    };
+  };
+  counting: {
+    shop: { id: number; type: "buff" | "debuff"; name: string; cost: number }[];
   };
   modlogs: {
     colors: {

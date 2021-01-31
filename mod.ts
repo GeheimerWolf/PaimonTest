@@ -11,13 +11,14 @@ console.info(
 );
 
 // await importDirectory(Deno.realPathSync("./src/structures"));
-await importDirectory(Deno.realPathSync("./src/controllers"));
+// await importDirectory(Deno.realPathSync("./src/controllers"));
 
 // Load these first before anything else so they are available for the rest.
 await importDirectory(Deno.realPathSync("./src/constants"));
 await importDirectory(Deno.realPathSync("./src/helpers"));
 await importDirectory(Deno.realPathSync("./src/events"));
 await fileLoader();
+if (!botCache.eventHandlers.debug) throw "No events loaded";
 
 // The order of these is not important.
 await Promise.all(

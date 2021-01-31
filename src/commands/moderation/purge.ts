@@ -24,7 +24,7 @@ createCommand({
     const messages = await getMessages(message.channelID, { limit: 100 }).catch(
       () => undefined,
     );
-    if (!messages) return;
+    if (!messages) return botCache.helpers.reactError(message);
 
     const now = Date.now();
     const maxAge = botCache.constants.milliseconds.WEEK * 2;

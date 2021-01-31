@@ -34,7 +34,7 @@ createCommand({
           membersHighestRole.id,
         ))
       ) {
-        return;
+        return botCache.helpers.reactError(message);
       }
 
       if (
@@ -45,10 +45,10 @@ createCommand({
           membersHighestRole.id,
         ))
       ) {
-        return;
+        return botCache.helpers.reactError(message);
       }
     } else {
-      if (!args.member) return;
+      if (!args.member) return botCache.helpers.reactError(message);
     }
 
     botCache.helpers.createModlog(
@@ -61,6 +61,6 @@ createCommand({
       },
     );
 
-    return;
+    return botCache.helpers.reactSuccess(message);
   },
 });

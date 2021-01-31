@@ -22,16 +22,16 @@ createSubcommand("embed", {
     const channel = botCache.vipGuildIDs.has(message.guildID) && args.channel
       ? args.channel
       : cache.channels.get(message.channelID);
-    if (!channel) return;
+    if (!channel) return botCache.helpers.reactError(message);
 
     const messageToUse = cache.messages.get(args.messageID) ||
       await getMessage(channel.id, args.messageID).catch(console.log);
     if (!messageToUse || messageToUse.author.id !== botID) {
-      return;
+      return botCache.helpers.reactError(message);
     }
 
     const member = cache.members.get(message.author.id);
-    if (!member) return;
+    if (!member) return botCache.helpers.reactError(message);
 
     const transformed = await botCache.helpers.variables(
       args.text,

@@ -25,14 +25,14 @@ createCommand({
         ["MOVE_MEMBERS"],
       ))
     ) {
-      return;
+      return botCache.helpers.reactError(message);
     }
     // If a valid new channel was provided we simply move all the users in the channel over
     if (args.new) {
       if (
         !(await botHasChannelPermissions(args.new.id, ["MOVE_MEMBERS"]))
       ) {
-        return;
+        return botCache.helpers.reactError(message);
       }
 
       guild?.voiceStates.forEach(async (vs) => {
@@ -44,13 +44,13 @@ createCommand({
         );
       });
     } else {
-      if (!message.mentions.length) return;
+      if (!message.mentions.length) return botCache.helpers.reactError(message);
       message.mentions.forEach(async (id) => {
         if (!guild?.voiceStates.has(id)) return;
         await editMember(message.guildID, id, { channel_id: args.channel.id });
       });
     }
 
-    return;
+    return botCache.helpers.reactSuccess(message);
   },
 });

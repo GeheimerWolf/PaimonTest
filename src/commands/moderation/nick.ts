@@ -25,7 +25,7 @@ createCommand({
     if (args.member || args.userID) {
       const settings = await db.guilds.get(message.guildID);
       if (!botCache.helpers.isModOrAdmin(message, settings)) {
-        return;
+        return botCache.helpers.reactError(message);
       }
     } // IF NEITHER WAS PROVIDED, EDITING SELF
     else {
@@ -34,7 +34,7 @@ createCommand({
 
     if (args.member) {
       if (args.member.id === guild.ownerID) {
-        return;
+        return botCache.helpers.reactError(message);
       }
 
       const botsHighestRole = await highestRole(message.guildID, botID);
@@ -51,7 +51,7 @@ createCommand({
           membersHighestRole.id,
         ))
       ) {
-        return;
+        return botCache.helpers.reactError(message);
       }
 
       // IF NOT EDITING SELF MAKE SURE USER IS HIGHER
@@ -68,12 +68,16 @@ createCommand({
             membersHighestRole.id,
           ))
         ) {
-          return;
+          return botCache.helpers.reactError(message);
         }
       }
-    } else if (!args.userID) return;
+    } else if (!args.userID) return botCache.helpers.reactError(message);
 
     const userID = args.member?.id || args.userID!;
-    if (userID === guild.ownerID) return;
+    if (userID === guild.ownerID) return botCache.helpers.reactError(message);
+
+    await editMember(message.guildID, userID, { nick: args.nick }).then(
+      async () => await botCache.helpers.reactSuccess(message),
+    ).catch(() => botCache.helpers.reactError(message));
   },
 });

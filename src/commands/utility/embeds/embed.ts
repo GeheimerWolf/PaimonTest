@@ -14,7 +14,7 @@ createCommand({
   ] as const,
   execute: async function (message, args, guild) {
     const member = cache.members.get(message.author.id);
-    if (!member) return;
+    if (!member) return botCache.helpers.reactError(message);
 
     const transformed = await botCache.helpers.variables(
       args.text,

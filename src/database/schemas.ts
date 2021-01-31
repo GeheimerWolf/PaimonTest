@@ -784,7 +784,6 @@ export interface UniqueRoleSetsSchema {
 }
 
 export interface UserSchema {
-  characters: any;
   /** The user id */
   id: string;
   /** The guild ids that this user is in. */
