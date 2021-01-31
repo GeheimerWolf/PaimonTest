@@ -16,7 +16,6 @@ import {
   removeUserReaction,
   sendMessage,
 } from "../../deps.ts";
-import { recentlyCreatedEventIDs } from "../commands/gaming/events/card.ts";
 import { db } from "../database/database.ts";
 import { humanizeMilliseconds, sendAlertMessage } from "../utils/helpers.ts";
 import { translate } from "../utils/i18next.ts";
@@ -332,7 +331,6 @@ async function handleEventReaction(
       break;
   }
 
-  recentlyCreatedEventIDs.add(event.eventID);
   // Trigger the card
   botCache.commands.get("events")?.subcommands?.get("card")?.execute?.(
     message,
