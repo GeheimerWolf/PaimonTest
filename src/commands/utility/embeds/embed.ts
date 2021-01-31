@@ -28,7 +28,6 @@ createCommand({
       const embed = new Embed(embedCode);
       const plaintext: string[] = [];
       if (!botCache.vipGuildIDs.has(message.guildID)) {
-        plaintext.push(`Sent By: ${member.tag}`);
       }
       if (embedCode.plaintext) plaintext.push(embedCode.plaintext);
 
