@@ -414,11 +414,7 @@ export interface Command<T extends readonly ArgumentDefinition[]> {
   usage?: string | string[];
   vipServerOnly?: boolean;
   vipUserOnly?: boolean;
-  execute?: (
-    message: Message,
-    args: ConvertArgumentDefinitionsToArgs<T>,
-    guild?: Guild,
-  ) => unknown | Promise<unknown>;
+  execute?: (message: Message, args: any, guild?: Guild) => unknown;
 }
 
 export interface Argument {

@@ -1,3 +1,23 @@
+export interface UserSchema {
+  /** The user id who created this emoji */
+  id: string;
+  /** The users uid. May be Not Available if user skipped. */
+  uid: string;
+  /** The characters that the user owns */
+  characters: OwnedCharacter[];
+  /** The adventurer rank */
+  adventurerRank: number;
+  /** The world levelfor the user */
+  worldLevel: number;
+}
+
+export interface OwnedCharacter {
+  /** The name of the character */
+  name: string;
+  /** The level of this character constellation */
+  constellationLevel: number;
+}
+
 export interface AlertsSchema {
   /** The username or unique name of what to follow. Reddit name, twitch username, twitter name etc.. */
   id: string;
