@@ -1,5 +1,4 @@
 import { createSubcommand } from "../../../utils/helpers.ts";
-import { botCache } from "../../../../deps.ts";
 import { db } from "../../../database/database.ts";
 
 createSubcommand("remind", {
