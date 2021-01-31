@@ -185,7 +185,7 @@ createCommand({
     }
 
     // ALL Q&A IS COMPLETE!
-    await db.users
+    await db.profile
       .update(message.author.id, {
         uid,
         characters: ownedCharacters,

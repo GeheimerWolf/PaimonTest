@@ -171,14 +171,6 @@ export interface Constants {
     numbers: string[];
     quit: string;
     success: string;
-    todo: {
-      current: "📌";
-      next: "⏩";
-      backlog: "🔖";
-      completed: "✅";
-      archived: "📥";
-      delete: "🗑️";
-    };
     voteup: string;
     votedown: string;
     mailbox: string;

@@ -35,7 +35,7 @@ createSubcommand("edit", {
       );
     }
 
-    db.users
+    db.profile
       .update(message.author.id, { uid: args.uid })
       .then(() =>
         sendDMOrResponse(message, "Edited the UID!").catch(console.log)
@@ -60,7 +60,7 @@ createSubcommand("edit", {
       return sendDMOrResponse(message, "The world level must be between 0-8");
     }
 
-    db.users
+    db.profile
       .update(message.author.id, { worldLevel: args.level })
       .then(() =>
         sendDMOrResponse(message, "Edited the World Level!").catch(console.log)
@@ -90,7 +90,7 @@ createSubcommand("edit", {
       );
     }
 
-    db.users
+    db.profile
       .update(message.author.id, { adventurerRank: args.level })
       .then(() =>
         sendDMOrResponse(message, "Edited the Adventurer Rank!").catch(
@@ -134,7 +134,7 @@ createSubcommand("edit", {
         .catch(console.log);
     }
 
-    const settings = await db.users.get(message.author.id);
+    const settings = await db.profile.get(message.author.id);
     if (!settings) {
       return sendDMOrResponse(message, "I can't find this profile.. ").catch(
         console.log,
@@ -154,7 +154,7 @@ createSubcommand("edit", {
       });
     }
 
-    db.users
+    db.profile
       .update(message.author.id, {
         characters: settings.characters,
       })

@@ -12,12 +12,12 @@ createCommand({
       return await message.reply("Invalid character name.").catch(console.log);
     }
 
-    const settings = await db.users.get(message.author.id);
+    const settings = await db.profile.get(message.author.id);
     if (!settings) {
       return await message.reply("You have not setup your profile yet.");
     }
 
-    await db.users.update(message.author.id, {
+    await db.profile.update(message.author.id, {
       characters: settings.characters.filter((c) => c.name !== character.name),
     });
     return await message.reply(`${character.name} has left your team...`);

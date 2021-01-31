@@ -23,7 +23,7 @@ createCommand({
     const member = args.member || message.member;
     if (!member) return;
 
-    const settings = await db.users.get(member.id);
+    const settings = await db.profile.get(member.id);
     if (!settings) {
       if (message.author.id !== member.id) {
         return message
