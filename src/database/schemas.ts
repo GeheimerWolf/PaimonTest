@@ -1,4 +1,4 @@
-export interface UserSchema {
+export interface ProfileSchema {
   /** The user id who created this emoji */
   id: string;
   /** The users uid. May be Not Available if user skipped. */
@@ -804,6 +804,10 @@ export interface UniqueRoleSetsSchema {
 }
 
 export interface UserSchema {
+  characters: any;
+  worldLevel: any;
+  adventurerRank: any;
+  uid: any;
   /** The user id */
   id: string;
   /** The guild ids that this user is in. */
